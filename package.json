@@ -1,0 +1,19 @@
+{
+  "name": "swctypia",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "packageManager": "yarn@4.3.0",
+  "dependencies": {
+    "@swc/core": "^1.6.3",
+    "@types/node": "^20.14.5",
+    "glob": "^10.4.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.5"
+  }
+}

@@ -1,0 +1,149 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`transform correctly 1`] = `
+{
+  "code": "import { is } from "./swctypia";
+import { test1, TestType } from "./test1";
+class TestClass {
+    constructor(){
+        __swctypia.is<TestType>(test1);
+    }
+}
+",
+}
+`;
+
+exports[`transform correctly 2`] = `
+{
+  "code": "import { is } from "./swctypia";
+import { test1, TestType } from "./test1";
+for(const key in test1){
+    __swctypia.is<TestType>(test1);
+}
+for (const item of [
+    test1
+]){
+    __swctypia.is<TestType>(test1);
+}
+for(let i = 0; i < 10; i++){
+    __swctypia.is<TestType>(test1);
+}
+",
+}
+`;
+
+exports[`transform correctly 3`] = `
+{
+  "code": "import { is } from "./swctypia";
+import { test1, TestType } from "./test1";
+function testFunction() {
+    return __swctypia.is<TestType>(test1);
+}
+function checkType() {
+    __swctypia.is<TestType>(test1);
+}
+const constArrowCheckType = ()=>{
+    __swctypia.is<TestType>(test1);
+};
+let letArrowCheckType = ()=>{
+    __swctypia.is<TestType>(test1);
+};
+",
+}
+`;
+
+exports[`transform correctly 4`] = `
+{
+  "code": "import { is } from "./swctypia";
+import { test1, TestType } from "./test1";
+if (test1.name === "test1") {
+    __swctypia.is<TestType>(test1);
+}
+",
+}
+`;
+
+exports[`transform correctly 5`] = `
+{
+  "code": "export function is<T>(obj: T): obj is T {
+  throw new Error("Not implemented");
+}",
+}
+`;
+
+exports[`transform correctly 6`] = `
+{
+  "code": "import { is } from "./swctypia";
+import { test1, TestType } from "./test1";
+switch(test1.name){
+    case "test1":
+        __swctypia.is<TestType>(test1);
+        break;
+    default:
+        __swctypia.is<TestType>(test1);
+}
+",
+}
+`;
+
+exports[`transform correctly 7`] = `
+{
+  "code": "import { is } from './swctypia';
+export interface TestType {
+    name: string;
+}
+export const test1: TestType = {
+    name: "test1"
+};
+__swctypia.is<TestType>(test1);
+",
+}
+`;
+
+exports[`transform correctly 8`] = `
+{
+  "code": "import { is } from "./swctypia";
+import { test1, TestType } from "./test1";
+try {
+    __swctypia.is<TestType>(test1);
+} catch (error) {
+    __swctypia.is<TestType>(error);
+} finally{
+    __swctypia.is<TestType>(test1);
+}
+",
+}
+`;
+
+exports[`transform correctly 9`] = `
+{
+  "code": "import { is } from "./swctypia";
+import { test1, TestType } from "./test1";
+const testIs = __swctypia.is<TestType>(test1);
+const testArray = [
+    __swctypia.is<TestType>(test1)
+];
+const testTurnary = test1.name === "test22" ? __swctypia.is<TestType>(test1) : undefined;
+const objectTest = {
+    isCheck: __swctypia.is<TestType>(test1)
+};
+",
+}
+`;
+
+exports[`transform correctly 10`] = `
+{
+  "code": "import { is } from "./swctypia";
+import { test1, TestType } from "./test1";
+while(test1.name === "test1"){
+    __swctypia.is<TestType>(test1);
+}
+do {
+    __swctypia.is<TestType>(test1);
+}while (test1.name === "test1")
+do {
+    __swctypia.is<TestType>(test1);
+}while (__swctypia.is<TestType>(test1))
+",
+}
+`;
