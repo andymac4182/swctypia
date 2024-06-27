@@ -1,4 +1,5 @@
 import {
+  Expression,
   TsArrayType, TsConditionalType,
   TsConstructorType,
   TsFunctionType, TsImportType, TsIndexedAccessType, TsInferType, TsIntersectionType,
@@ -9,22 +10,123 @@ import {
   TsTypeReference, TsUnionType
 } from "@swc/core";
 import {TsTypeElement} from "@swc/types";
+import {ASTNode} from "./validation-ast";
 
-function resolveTsPropertySignature(member: TsPropertySignature) {
-  if (member.typeAnnotation) {
-    resolveTsType(member.typeAnnotation);
+async function resolveTsPropertySignature(member: TsPropertySignature) {
+  if(member.computed){
+    return undefined;
+  }
+  const prop =  {
+    key: await resolveExpression(member.key),
+    optional: member.optional,
+    typeInfo: await resolveTsType(member.typeAnnotation.typeAnnotation),
+  }
+  console.log({prop});
+  return prop;
+}
+
+async function resolveExpression(expr: Expression){
+  switch (expr.type) {
+    case "ThisExpression":
+      break;
+    case "ArrayExpression":
+      break;
+    case "ObjectExpression":
+      break;
+    case "FunctionExpression":
+      break;
+    case "UnaryExpression":
+      break;
+    case "UpdateExpression":
+      break;
+    case "BinaryExpression":
+      break;
+    case "AssignmentExpression":
+      break;
+    case "MemberExpression":
+      break;
+    case "SuperPropExpression":
+      break;
+    case "ConditionalExpression":
+      break;
+    case "CallExpression":
+      break;
+    case "NewExpression":
+      break;
+    case "SequenceExpression":
+      break;
+    case "Identifier":
+      return expr.value;
+    case "StringLiteral":
+      break;
+    case "BooleanLiteral":
+      break;
+    case "NullLiteral":
+      break;
+    case "NumericLiteral":
+      break;
+    case "BigIntLiteral":
+      break;
+    case "RegExpLiteral":
+      break;
+    case "JSXText":
+      break;
+    case "TemplateLiteral":
+      break;
+    case "TaggedTemplateExpression":
+      break;
+    case "ArrowFunctionExpression":
+      break;
+    case "ClassExpression":
+      break;
+    case "YieldExpression":
+      break;
+    case "MetaProperty":
+      break;
+    case "AwaitExpression":
+      break;
+    case "ParenthesisExpression":
+      break;
+    case "JSXMemberExpression":
+      break;
+    case "JSXNamespacedName":
+      break;
+    case "JSXEmptyExpression":
+      break;
+    case "JSXElement":
+      break;
+    case "JSXFragment":
+      break;
+    case "TsTypeAssertion":
+      break;
+    case "TsConstAssertion":
+      break;
+    case "TsNonNullExpression":
+      break;
+    case "TsAsExpression":
+      break;
+    case "TsSatisfiesExpression":
+      break;
+    case "TsInstantiation":
+      break;
+    case "PrivateName":
+      break;
+    case "OptionalChainingExpression":
+      break;
+    case "Invalid":
+      break;
+
   }
 }
 
-function resolveTsTypeElement(member: TsTypeElement) {
+async function resolveTsTypeElement(member: TsTypeElement) {
   switch (member.type) {
     case "TsCallSignatureDeclaration":
       break;
     case "TsConstructSignatureDeclaration":
       break;
     case "TsPropertySignature":
-      resolveTsPropertySignature(member);
-      break;
+      return await resolveTsPropertySignature(member);
     case "TsGetterSignature":
       break;
     case "TsSetterSignature":
@@ -36,16 +138,56 @@ function resolveTsTypeElement(member: TsTypeElement) {
   }
 }
 
-function resolveTsTypeLiteral(tsType: TsTypeLiteral) {
+async function resolveTsTypeLiteral(tsType: TsTypeLiteral): Promise<ASTNode> {
+  const properties: { [key: string]: ASTNode } = {};
   for (const member of tsType.members) {
-    resolveTsTypeElement(member);
+    const result = await resolveTsTypeElement(member);
+    if (result) {
+      properties[result.key] = result.typeInfo
+    }
+  }
+  return {
+    type: 'object',
+    properties,
   }
 }
 
-export async function resolveTsType(tsType: TsType) {
+async function resolveTsKeywordType(tsType: TsKeywordType): Promise<ASTNode | undefined> {
+  switch (tsType.kind) {
+  case "string":
+    return { type: 'string' }
+  case "number":
+    return { type: 'number' }
+  case "bigint":
+    break;
+  case "boolean":
+    return { type: 'boolean' };
+  case "symbol":
+    break;
+  case "undefined":
+    break;
+  case "object":
+    break;
+  case "any":
+    break;
+  case "unknown":
+    break;
+  case "void":
+    break;
+  case "null":
+    break;
+  case "never":
+    break;
+  case "intrinsic":
+    break;
+
+}
+}
+
+export async function resolveTsType(tsType: TsType): Promise<ASTNode | undefined> {
   switch (tsType.type) {
     case "TsKeywordType":
-      break;
+      return await resolveTsKeywordType(tsType);
     case "TsThisType":
       break;
     case "TsFunctionType":
@@ -57,8 +199,7 @@ export async function resolveTsType(tsType: TsType) {
     case "TsTypeQuery":
       break;
     case "TsTypeLiteral":
-      resolveTsTypeLiteral(tsType);
-      break;
+      return await resolveTsTypeLiteral(tsType);
     case "TsArrayType":
       break;
     case "TsTupleType":
@@ -89,6 +230,6 @@ export async function resolveTsType(tsType: TsType) {
       break;
     case "TsImportType":
       break;
-
   }
+  return undefined;
 }

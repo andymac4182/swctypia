@@ -1,0 +1,12 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`tsTypeResolver should resolve a type 1`] = `
+{
+  "properties": {
+    "test": {
+      "type": "string",
+    },
+  },
+  "type": "object",
+}
+`;

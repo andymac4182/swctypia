@@ -28,7 +28,7 @@ type ArrayConstraints = {
 };
 
 // Define ASTNode with type-safe constraints
-type ASTNode =
+export type ASTNode =
   | { type: 'string', constraints?: StringConstraints }
   | { type: 'number', constraints?: NumberConstraints }
   | { type: 'boolean' }
@@ -37,7 +37,7 @@ type ASTNode =
   | { type: 'union', types: ASTNode[] }
   | { type: 'literal', value: string | number | boolean };
 
-function generateValidationCode(ast: ASTNode, variableName: string = 'value'): string {
+export function generateValidationCode(ast: ASTNode, variableName: string = 'value'): string {
   switch (ast.type) {
     case 'string':
     case 'number':
