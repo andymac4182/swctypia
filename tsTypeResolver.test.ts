@@ -27,6 +27,10 @@ describe('tsTypeResolver', () => {
     'type testType = boolean',
     'type testType = { test: string } | { test2: number }',
     'type testType = { test: string } & { test2: number }',
+    'type testType = { test: string}[]',
+    'type testType = [string, number]',
+    'type testType = { test: \'test\' }',
+// TODO: Move to TypeReferences   'type testType = Array<{ test: string}>',
   ]
   it.each(tsTypeLiteralTestCases)('should resolve self contained types', async (testCase) => {
     const typeAST = await parseStringExtractType(testCase);

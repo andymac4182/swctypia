@@ -101,3 +101,43 @@ exports[`tsTypeResolver should resolve self contained types 8`] = `
   "type": "object",
 }
 `;
+
+exports[`tsTypeResolver should resolve self contained types 9`] = `
+{
+  "elementType": {
+    "properties": {
+      "test": {
+        "type": "string",
+      },
+    },
+    "type": "object",
+  },
+  "type": "array",
+}
+`;
+
+exports[`tsTypeResolver should resolve self contained types 10`] = `
+{
+  "type": "tuple",
+  "types": [
+    {
+      "type": "string",
+    },
+    {
+      "type": "number",
+    },
+  ],
+}
+`;
+
+exports[`tsTypeResolver should resolve self contained types 11`] = `
+{
+  "properties": {
+    "test": {
+      "type": "literal",
+      "value": "test",
+    },
+  },
+  "type": "object",
+}
+`;

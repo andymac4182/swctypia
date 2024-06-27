@@ -214,6 +214,45 @@ async function resolveTsUnionType(tsType: TsUnionType): Promise<ASTNode | undefi
   }
 }
 
+async function resolveTsArrayType(tsType: TsArrayType): Promise<ASTNode | undefined> {
+  const elementType = await resolveTsType(tsType.elemType);
+  if (elementType) {
+    return {
+      type: 'array',
+      elementType,
+    }
+  }
+}
+
+async function resolveTsTupleType(tsType: TsTupleType): Promise<ASTNode> {
+  const types: ASTNode[] = [];
+  for (const type of tsType.elemTypes) {
+    const result = await resolveTsType(type.ty);
+    if (result) {
+      types.push(result);
+    }
+  }
+  return {
+    type: 'tuple',
+    types,
+  }
+}
+
+async function resolveTsLiteralType(tsType: TsLiteralType): Promise<ASTNode | undefined> {
+  switch (tsType.literal.type) {
+    case "NumericLiteral":
+      return { type: 'literal', value: tsType.literal.value }
+    case "StringLiteral":
+      return { type: 'literal', value: tsType.literal.value }
+    case "BooleanLiteral":
+      return { type: 'literal', value: tsType.literal.value }
+    case "BigIntLiteral":
+      break;
+    case "TemplateLiteral":
+      break;
+  }
+}
+
 export async function resolveTsType(tsType: TsType): Promise<ASTNode | undefined> {
   switch (tsType.type) {
     case "TsKeywordType":
@@ -231,9 +270,9 @@ export async function resolveTsType(tsType: TsType): Promise<ASTNode | undefined
     case "TsTypeLiteral":
       return await resolveTsTypeLiteral(tsType);
     case "TsArrayType":
-      break;
+      return await resolveTsArrayType(tsType);
     case "TsTupleType":
-      break;
+      return await resolveTsTupleType(tsType);
     case "TsOptionalType":
       break;
     case "TsRestType":
@@ -255,7 +294,7 @@ export async function resolveTsType(tsType: TsType): Promise<ASTNode | undefined
     case "TsMappedType":
       break;
     case "TsLiteralType":
-      break;
+      return await resolveTsLiteralType(tsType);
     case "TsTypePredicate":
       break;
     case "TsImportType":
