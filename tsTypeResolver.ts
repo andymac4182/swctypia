@@ -184,6 +184,36 @@ async function resolveTsKeywordType(tsType: TsKeywordType): Promise<ASTNode | un
 }
 }
 
+async function resolveTsIntersectionType(tsType: TsIntersectionType): Promise<ASTNode | undefined> {
+  const properties: { [key: string]: ASTNode } = {};
+  for (const type of tsType.types) {
+    const result = await resolveTsType(type);
+    if (result && result.type === 'object') {
+      for (const [key, value] of Object.entries(result.properties)) {
+        properties[key] = value;
+      }
+    }
+  }
+  return {
+    type: 'object',
+    properties,
+  }
+}
+
+async function resolveTsUnionType(tsType: TsUnionType): Promise<ASTNode | undefined> {
+  const types: ASTNode[] = [];
+  for (const type of tsType.types) {
+    const result = await resolveTsType(type);
+    if (result) {
+      types.push(result);
+    }
+  }
+  return {
+    type: 'union',
+    types,
+  }
+}
+
 export async function resolveTsType(tsType: TsType): Promise<ASTNode | undefined> {
   switch (tsType.type) {
     case "TsKeywordType":
@@ -209,9 +239,9 @@ export async function resolveTsType(tsType: TsType): Promise<ASTNode | undefined
     case "TsRestType":
       break;
     case "TsUnionType":
-      break;
+      return await resolveTsUnionType(tsType);
     case "TsIntersectionType":
-      break;
+      return await resolveTsIntersectionType(tsType);
     case "TsConditionalType":
       break;
     case "TsInferType":
