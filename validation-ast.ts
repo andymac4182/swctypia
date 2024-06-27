@@ -31,11 +31,12 @@ type ArrayConstraints = {
 export type ASTNode =
   | { type: 'string', constraints?: StringConstraints }
   | { type: 'number', constraints?: NumberConstraints }
+  | { type: 'bigint' }
   | { type: 'boolean' }
   | { type: 'array', elementType: ASTNode, constraints?: ArrayConstraints }
   | { type: 'object', properties: { [key: string]: ASTNode } }
   | { type: 'union', types: ASTNode[] }
-  | { type: 'literal', value: string | number | boolean }
+  | { type: 'literal', value: string | number | bigint | boolean }
   | { type: 'tuple', types: ASTNode[] };
 
 export function generateValidationCode(ast: ASTNode, variableName: string = 'value'): string {

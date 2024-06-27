@@ -247,7 +247,7 @@ async function resolveTsLiteralType(tsType: TsLiteralType): Promise<ASTNode | un
     case "BooleanLiteral":
       return { type: 'literal', value: tsType.literal.value }
     case "BigIntLiteral":
-      break;
+      return { type: 'bigint', value: tsType.literal.value }
     case "TemplateLiteral":
       break;
   }
