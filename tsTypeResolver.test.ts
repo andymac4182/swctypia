@@ -1,8 +1,8 @@
 import {resolveTsType} from "./tsTypeResolver";
-import {parse} from "@swc/core";
+import {Module, parse, TsType} from "@swc/core";
 
 
-async function parseStringExtractType(code: string) {
+async function parseStringExtractType(code: string): Promise<{ fileAST: Module, testType: TsType }> {
   const result = await parse(code, {
     syntax: "typescript",
     comments: true,
@@ -11,7 +11,7 @@ async function parseStringExtractType(code: string) {
 
   for (const statement of result.body) {
     if (statement.type === 'TsTypeAliasDeclaration' && statement.id.value === 'testType'){
-      return statement.typeAnnotation;
+      return { fileAST: result, testType: statement.typeAnnotation};
     }
   }
 }
@@ -30,11 +30,13 @@ describe('tsTypeResolver', () => {
     'type testType = { test: string}[]',
     'type testType = [string, number]',
     'type testType = { test: \'test\' }',
+    'type ReferencedType = {test: string }; type testType = ReferencedType;',
+    'interface ReferencedInterface { test: string }; type testType = ReferencedInterface;',
 // TODO: Move to TypeReferences   'type testType = Array<{ test: string}>',
   ]
   it.each(tsTypeLiteralTestCases)('should resolve self contained types', async (testCase) => {
     const typeAST = await parseStringExtractType(testCase);
-    const result = await resolveTsType(typeAST);
+    const result = await resolveTsType(typeAST.fileAST, typeAST.testType);
     expect(result).toMatchSnapshot();
   });
 });

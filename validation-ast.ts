@@ -101,7 +101,7 @@ function generateUnionValidation(types: ASTNode[], variableName: string): string
   return typeChecks.join(' || ');
 }
 
-function generateLiteralValidation(value: string | number | boolean, variableName: string): string {
+function generateLiteralValidation(value: string | number | boolean | bigint, variableName: string): string {
   return `${variableName} === ${JSON.stringify(value)}`;
 }
 

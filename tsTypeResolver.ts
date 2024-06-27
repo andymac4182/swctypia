@@ -1,8 +1,8 @@
 import {
-  Expression,
+  Expression, Module,
   TsArrayType, TsConditionalType,
   TsConstructorType,
-  TsFunctionType, TsImportType, TsIndexedAccessType, TsInferType, TsIntersectionType,
+  TsFunctionType, TsImportType, TsIndexedAccessType, TsInferType, TsInterfaceBody, TsIntersectionType,
   TsKeywordType, TsLiteralType, TsMappedType, TsOptionalType, TsParenthesizedType, TsPropertySignature, TsRestType,
   TsThisType, TsTupleType, TsType,
   TsTypeLiteral, TsTypeOperator, TsTypePredicate,
@@ -12,14 +12,14 @@ import {
 import {TsTypeElement} from "@swc/types";
 import {ASTNode} from "./validation-ast";
 
-async function resolveTsPropertySignature(member: TsPropertySignature) {
+async function resolveTsPropertySignature(fileAST: Module, member: TsPropertySignature) {
   if(member.computed){
     return undefined;
   }
   const prop =  {
     key: await resolveExpression(member.key),
     optional: member.optional,
-    typeInfo: await resolveTsType(member.typeAnnotation.typeAnnotation),
+    typeInfo: await resolveTsType(fileAST, member.typeAnnotation.typeAnnotation),
   }
   console.log({prop});
   return prop;
@@ -119,14 +119,14 @@ async function resolveExpression(expr: Expression){
   }
 }
 
-async function resolveTsTypeElement(member: TsTypeElement) {
+async function resolveTsTypeElement(fileAST: Module, member: TsTypeElement) {
   switch (member.type) {
     case "TsCallSignatureDeclaration":
       break;
     case "TsConstructSignatureDeclaration":
       break;
     case "TsPropertySignature":
-      return await resolveTsPropertySignature(member);
+      return await resolveTsPropertySignature(fileAST, member);
     case "TsGetterSignature":
       break;
     case "TsSetterSignature":
@@ -138,10 +138,10 @@ async function resolveTsTypeElement(member: TsTypeElement) {
   }
 }
 
-async function resolveTsTypeLiteral(tsType: TsTypeLiteral): Promise<ASTNode> {
+async function resolveTsTypeLiteral(fileAST: Module, tsType: TsTypeLiteral): Promise<ASTNode | undefined> {
   const properties: { [key: string]: ASTNode } = {};
   for (const member of tsType.members) {
-    const result = await resolveTsTypeElement(member);
+    const result = await resolveTsTypeElement(fileAST, member);
     if (result) {
       properties[result.key] = result.typeInfo
     }
@@ -152,7 +152,7 @@ async function resolveTsTypeLiteral(tsType: TsTypeLiteral): Promise<ASTNode> {
   }
 }
 
-async function resolveTsKeywordType(tsType: TsKeywordType): Promise<ASTNode | undefined> {
+async function resolveTsKeywordType(fileAST: Module, tsType: TsKeywordType): Promise<ASTNode | undefined> {
   switch (tsType.kind) {
   case "string":
     return { type: 'string' }
@@ -184,10 +184,10 @@ async function resolveTsKeywordType(tsType: TsKeywordType): Promise<ASTNode | un
 }
 }
 
-async function resolveTsIntersectionType(tsType: TsIntersectionType): Promise<ASTNode | undefined> {
+async function resolveTsIntersectionType(fileAST: Module, tsType: TsIntersectionType): Promise<ASTNode | undefined> {
   const properties: { [key: string]: ASTNode } = {};
   for (const type of tsType.types) {
-    const result = await resolveTsType(type);
+    const result = await resolveTsType(fileAST, type);
     if (result && result.type === 'object') {
       for (const [key, value] of Object.entries(result.properties)) {
         properties[key] = value;
@@ -200,10 +200,10 @@ async function resolveTsIntersectionType(tsType: TsIntersectionType): Promise<AS
   }
 }
 
-async function resolveTsUnionType(tsType: TsUnionType): Promise<ASTNode | undefined> {
+async function resolveTsUnionType(fileAST: Module, tsType: TsUnionType): Promise<ASTNode | undefined> {
   const types: ASTNode[] = [];
   for (const type of tsType.types) {
-    const result = await resolveTsType(type);
+    const result = await resolveTsType(fileAST, type);
     if (result) {
       types.push(result);
     }
@@ -214,8 +214,8 @@ async function resolveTsUnionType(tsType: TsUnionType): Promise<ASTNode | undefi
   }
 }
 
-async function resolveTsArrayType(tsType: TsArrayType): Promise<ASTNode | undefined> {
-  const elementType = await resolveTsType(tsType.elemType);
+async function resolveTsArrayType(fileAST: Module, tsType: TsArrayType): Promise<ASTNode | undefined> {
+  const elementType = await resolveTsType(fileAST, tsType.elemType);
   if (elementType) {
     return {
       type: 'array',
@@ -224,10 +224,10 @@ async function resolveTsArrayType(tsType: TsArrayType): Promise<ASTNode | undefi
   }
 }
 
-async function resolveTsTupleType(tsType: TsTupleType): Promise<ASTNode> {
+async function resolveTsTupleType(fileAST: Module, tsType: TsTupleType): Promise<ASTNode | undefined> {
   const types: ASTNode[] = [];
   for (const type of tsType.elemTypes) {
-    const result = await resolveTsType(type.ty);
+    const result = await resolveTsType(fileAST, type.ty);
     if (result) {
       types.push(result);
     }
@@ -247,16 +247,48 @@ async function resolveTsLiteralType(tsType: TsLiteralType): Promise<ASTNode | un
     case "BooleanLiteral":
       return { type: 'literal', value: tsType.literal.value }
     case "BigIntLiteral":
-      return { type: 'bigint', value: tsType.literal.value }
+      return { type: 'literal', value: tsType.literal.value }
     case "TemplateLiteral":
       break;
   }
 }
 
-export async function resolveTsType(tsType: TsType): Promise<ASTNode | undefined> {
+async function resolveTsInterfaceBody(fileAST: Module, body: TsInterfaceBody): Promise<ASTNode | undefined> {
+  const properties: { [key: string]: ASTNode } = {};
+  for (const member of body.body) {
+    const result = await resolveTsTypeElement(fileAST, member);
+    if (result) {
+      properties[result.key] = result.typeInfo
+    }
+  }
+  return {
+    type: 'object',
+    properties,
+  }
+}
+
+async function resolveTsTypeReference(fileAST: Module, tsType: TsTypeReference): Promise<ASTNode | undefined> {
+  switch (tsType.typeName.type) {
+    case "Identifier":
+      const typeName = tsType.typeName.value;
+      for (const statement of fileAST.body) {
+        if (statement.type === 'TsTypeAliasDeclaration' && statement.id.value === typeName) {
+          return await resolveTsType(fileAST, statement.typeAnnotation);
+        }
+        if (statement.type === 'TsInterfaceDeclaration' && statement.id.value === typeName) {
+          return await resolveTsInterfaceBody(fileAST, statement.body);
+        }
+      }
+      break;
+    case "TsQualifiedName":
+      break;
+  }
+}
+
+export async function resolveTsType(fileAST: Module, tsType: TsType): Promise<ASTNode | undefined> {
   switch (tsType.type) {
     case "TsKeywordType":
-      return await resolveTsKeywordType(tsType);
+      return await resolveTsKeywordType(fileAST, tsType);
     case "TsThisType":
       break;
     case "TsFunctionType":
@@ -264,23 +296,23 @@ export async function resolveTsType(tsType: TsType): Promise<ASTNode | undefined
     case "TsConstructorType":
       break;
     case "TsTypeReference":
-      break;
+      return await resolveTsTypeReference(fileAST, tsType);
     case "TsTypeQuery":
       break;
     case "TsTypeLiteral":
-      return await resolveTsTypeLiteral(tsType);
+      return await resolveTsTypeLiteral(fileAST, tsType);
     case "TsArrayType":
-      return await resolveTsArrayType(tsType);
+      return await resolveTsArrayType(fileAST, tsType);
     case "TsTupleType":
-      return await resolveTsTupleType(tsType);
+      return await resolveTsTupleType(fileAST, tsType);
     case "TsOptionalType":
       break;
     case "TsRestType":
       break;
     case "TsUnionType":
-      return await resolveTsUnionType(tsType);
+      return await resolveTsUnionType(fileAST, tsType);
     case "TsIntersectionType":
-      return await resolveTsIntersectionType(tsType);
+      return await resolveTsIntersectionType(fileAST, tsType);
     case "TsConditionalType":
       break;
     case "TsInferType":
