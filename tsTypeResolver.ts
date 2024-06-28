@@ -278,6 +278,12 @@ async function resolveTsTypeReference(fileAST: Module, tsType: TsTypeReference):
         if (statement.type === 'TsInterfaceDeclaration' && statement.id.value === typeName) {
           return await resolveTsInterfaceBody(fileAST, statement.body);
         }
+        if (statement.type === 'ExportDeclaration' && statement.declaration.type === 'TsTypeAliasDeclaration' && statement.declaration.id.value === typeName) {
+          return await resolveTsType(fileAST, statement.declaration.typeAnnotation);
+        }
+        if (statement.type === 'ExportDeclaration' && statement.declaration.type === 'TsInterfaceDeclaration' && statement.declaration.id.value === typeName) {
+          return await resolveTsInterfaceBody(fileAST, statement.declaration.body);
+        }
       }
       break;
     case "TsQualifiedName":

@@ -32,6 +32,8 @@ describe('tsTypeResolver', () => {
     'type testType = { test: \'test\' }',
     'type ReferencedType = {test: string }; type testType = ReferencedType;',
     'interface ReferencedInterface { test: string }; type testType = ReferencedInterface;',
+    'export type ReferencedType = {test: string }; type testType = ReferencedType;',
+    'export interface ReferencedInterface { test: string }; type testType = ReferencedInterface;',
 // TODO: Move to TypeReferences   'type testType = Array<{ test: string}>',
   ]
   it.each(tsTypeLiteralTestCases)('should resolve self contained types', async (testCase) => {

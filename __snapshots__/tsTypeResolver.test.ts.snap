@@ -163,3 +163,25 @@ exports[`tsTypeResolver should resolve self contained types 13`] = `
   "type": "object",
 }
 `;
+
+exports[`tsTypeResolver should resolve self contained types 14`] = `
+{
+  "properties": {
+    "test": {
+      "type": "string",
+    },
+  },
+  "type": "object",
+}
+`;
+
+exports[`tsTypeResolver should resolve self contained types 15`] = `
+{
+  "properties": {
+    "test": {
+      "type": "string",
+    },
+  },
+  "type": "object",
+}
+`;
