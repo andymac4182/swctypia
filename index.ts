@@ -62,7 +62,7 @@ import * as path from "node:path";
 
 export interface Context {
   module: Module;
-  resolve: (toLookup: string) => Promise<string>;
+  resolve: (toLookup: string) => Promise<{ path: string, module: Module }>;
 }
 
 async function findSwcTypiaImports(result: Module) {

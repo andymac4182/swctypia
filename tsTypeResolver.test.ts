@@ -2,7 +2,7 @@ import {resolveTsType} from "./tsTypeResolver";
 import {Module, parse, TsType} from "@swc/core";
 
 
-async function parseStringExtractType(code: string): Promise<{ fileAST: Module, testType: TsType }> {
+async function parseStringExtractType(code: string, typeName: string): Promise<{ fileAST: Module, testType: TsType }> {
   const result = await parse(code, {
     syntax: "typescript",
     comments: true,
@@ -10,7 +10,7 @@ async function parseStringExtractType(code: string): Promise<{ fileAST: Module, 
   });
 
   for (const statement of result.body) {
-    if (statement.type === 'TsTypeAliasDeclaration' && statement.id.value === 'testType'){
+    if (statement.type === 'TsTypeAliasDeclaration' && statement.id.value === typeName){
       return { fileAST: result, testType: statement.typeAnnotation};
     }
   }
@@ -34,11 +34,34 @@ describe('tsTypeResolver', () => {
     'interface ReferencedInterface { test: string }; type testType = ReferencedInterface;',
     'export type ReferencedType = {test: string }; type testType = ReferencedType;',
     'export interface ReferencedInterface { test: string }; type testType = ReferencedInterface;',
+// TODO: Support TemplateLiteral in resolveTsLiteralType 'export type ReferencedType = `${number}px`; export type testType = ReferencedType;',
 // TODO: Move to TypeReferences   'type testType = Array<{ test: string}>',
   ]
   it.each(tsTypeLiteralTestCases)('should resolve self contained types', async (testCase) => {
-    const typeAST = await parseStringExtractType(testCase);
-    const result = await resolveTsType(typeAST.fileAST, typeAST.testType);
+    const typeAST = await parseStringExtractType(testCase, 'testType');
+    const result = await resolveTsType({module: typeAST.fileAST, resolve: (path) => Promise.resolve({path, module: undefined})}, typeAST.testType);
+    expect(result).toMatchSnapshot();
+  });
+
+
+  const tsFileTestCases = [
+    {'entrypoint.ts': 'import {type ReferencedType} from \'types.ts\'; type testType = ReferencedType;', 'types.ts': 'export type ReferencedType = {test: string };'},
+  ]
+  it.each(tsFileTestCases)('should resolve types from another file', async (files) => {
+    const typeAST = await parseStringExtractType(files['entrypoint.ts'], 'testType');
+
+    const resolverFn = async (path: string) => {
+      console.log('resolving', path);
+      const result = await parse(files[path] ?? "", {
+        syntax: "typescript",
+        comments: true,
+        target: 'esnext',
+      });
+
+      return { path, module: result };
+    }
+
+    const result = await resolveTsType({module: typeAST.fileAST, resolve: resolverFn}, typeAST.testType);
     expect(result).toMatchSnapshot();
   });
 });
