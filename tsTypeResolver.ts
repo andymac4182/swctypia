@@ -269,24 +269,32 @@ async function resolveTsInterfaceBody(ctx: Context, body: TsInterfaceBody): Prom
   }
 }
 
+async function resolveTypeFromFile(ctx: Context, source: string, typeName: string){
+  const importedModule = await ctx.resolve(source);
+  console.log('importedModule', importedModule.module.body);
+  if (importedModule) {
+    for (const importedStatement of importedModule.module.body) {
+      if (importedStatement.type === 'ExportDeclaration' && importedStatement.declaration.type === 'TsTypeAliasDeclaration' && importedStatement.declaration.id.value === typeName) {
+        return await resolveTsType(ctx, importedStatement.declaration.typeAnnotation);
+      }
+      if (importedStatement.type === 'ExportDeclaration' && importedStatement.declaration.type === 'TsInterfaceDeclaration' && importedStatement.declaration.id.value === typeName) {
+        return await resolveTsInterfaceBody(ctx, importedStatement.declaration.body);
+      }
+      if (importedStatement.type === "ExportNamedDeclaration"){
+        return await resolveTypeFromFile(ctx, importedStatement.source.value, typeName);
+      }
+    }
+  }
+}
+
 async function resolveTsTypeReference(ctx: Context, tsType: TsTypeReference): Promise<ASTNode | undefined> {
   switch (tsType.typeName.type) {
     case "Identifier":
       const typeName = tsType.typeName.value;
+      const typeParams = tsType.typeParams;
       for (const statement of ctx.module.body) {
         if (statement.type === 'ImportDeclaration' && statement.specifiers.some(specifier => specifier.local.value === typeName)) {
-          const importedModule = await ctx.resolve(statement.source.value);
-          console.log('importedModule', importedModule.module.body);
-          if (importedModule) {
-            for (const importedStatement of importedModule.module.body) {
-              if (importedStatement.type === 'ExportDeclaration' && importedStatement.declaration.type === 'TsTypeAliasDeclaration' && importedStatement.declaration.id.value === typeName) {
-                return await resolveTsType(ctx, importedStatement.declaration.typeAnnotation);
-              }
-              if (importedStatement.type === 'ExportDeclaration' && importedStatement.declaration.type === 'TsInterfaceDeclaration' && importedStatement.declaration.id.value === typeName) {
-                return await resolveTsInterfaceBody(ctx, importedStatement.declaration.body);
-              }
-            }
-          }
+          return await resolveTypeFromFile(ctx, statement.source.value, typeName);
         }
         if (statement.type === 'TsTypeAliasDeclaration' && statement.id.value === typeName) {
           return await resolveTsType(ctx, statement.typeAnnotation);

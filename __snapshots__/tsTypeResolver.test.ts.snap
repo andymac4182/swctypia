@@ -1,5 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`tsTypeResolver should resolve generic types 1`] = `undefined`;
+
 exports[`tsTypeResolver should resolve self contained types 1`] = `
 {
   "properties": {
@@ -187,6 +189,17 @@ exports[`tsTypeResolver should resolve self contained types 15`] = `
 `;
 
 exports[`tsTypeResolver should resolve types from another file 1`] = `
+{
+  "properties": {
+    "test": {
+      "type": "string",
+    },
+  },
+  "type": "object",
+}
+`;
+
+exports[`tsTypeResolver should resolve types from another file 2`] = `
 {
   "properties": {
     "test": {

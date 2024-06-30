@@ -46,6 +46,7 @@ describe('tsTypeResolver', () => {
 
   const tsFileTestCases = [
     {'entrypoint.ts': 'import {type ReferencedType} from \'types.ts\'; type testType = ReferencedType;', 'types.ts': 'export type ReferencedType = {test: string };'},
+    {'entrypoint.ts': 'import {type ReferencedType} from \'barrel.ts\'; type testType = ReferencedType;', 'barrel.ts': 'export {ReferencedType} from \'types.ts\'', 'types.ts': 'export type ReferencedType = {test: string };'},
   ]
   it.each(tsFileTestCases)('should resolve types from another file', async (files) => {
     const typeAST = await parseStringExtractType(files['entrypoint.ts'], 'testType');
@@ -62,6 +63,15 @@ describe('tsTypeResolver', () => {
     }
 
     const result = await resolveTsType({module: typeAST.fileAST, resolve: resolverFn}, typeAST.testType);
+    expect(result).toMatchSnapshot();
+  });
+
+  const tsGenericTestCases = [
+    {'entrypoint.ts': 'interface ReferencedType<T> { testProp: T }; type testType = ReferencedType<{testProp: string}>;'},
+  ];
+  it.each(tsGenericTestCases)('should resolve generic types', async (testCase) => {
+    const typeAST = await parseStringExtractType(testCase['entrypoint.ts'], 'testType');
+    const result = await resolveTsType({module: typeAST.fileAST, resolve: (path) => Promise.resolve({path, module: undefined})}, typeAST.testType);
     expect(result).toMatchSnapshot();
   });
 });
