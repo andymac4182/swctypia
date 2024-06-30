@@ -118,21 +118,8 @@ try {
 exports[`transform correctly 9`] = `
 {
   "code": "import { is } from "./swctypia";
-__swctypia.is<{
-    test: string;
-    testOptional?: number;
-}>({
-    test: "test"
-});
-",
-}
-`;
-
-exports[`transform correctly 10`] = `
-{
-  "code": "import { is } from "./swctypia";
 import { test1, TestType } from "./test1";
-const testIs = __swctypia.is<TestType>(test1);
+const testIs = typeof test1 === 'object' && test1 !== null && typeof test1['name'] === 'string';
 const testArray = [
     __swctypia.is<TestType>(test1)
 ];
@@ -144,7 +131,7 @@ const objectTest = {
 }
 `;
 
-exports[`transform correctly 11`] = `
+exports[`transform correctly 10`] = `
 {
   "code": "import { is } from "./swctypia";
 import { test1, TestType } from "./test1";

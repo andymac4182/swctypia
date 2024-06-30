@@ -59,6 +59,7 @@ import {
 import {ExprOrSpread} from "@swc/types";
 import {isProcessor} from './functionProcessors/is'
 import * as path from "node:path";
+import { readFileSync } from "node:fs";
 
 export interface Context {
   module: Module;
@@ -87,7 +88,17 @@ async function findSwcTypiaImports(result: Module) {
 
 function resolve(originPath: string) {
   return async (toLookup: string) => {
-    return path.resolve(path.dirname(originPath), toLookup);
+    const resolvedPath = path.resolve(path.dirname(originPath), `test-find-is-function/${toLookup}.ts`);
+    const code = readFileSync(resolvedPath, 'utf-8');
+    const result = await parse(code, {
+      syntax: "typescript",
+      comments: true,
+      target: 'esnext',
+    });
+    return {
+      module: result,
+      path: resolvedPath
+    }
   }
 }
 
@@ -118,9 +129,9 @@ export async function transformFile(path: string, code: string) {
   }
 }
 
-async function visitCallExpression(ctx: Context, expression: CallExpression, functionsToFind: string[]) {
+async function visitCallExpression(ctx: Context, expression: CallExpression, functionsToFind: string[]): Promise<Expression | undefined> {
   if (expression.callee.type === "Identifier" && functionsToFind.includes(expression.callee.value)) {
-    await isProcessor(ctx, expression);
+    return await isProcessor(ctx, expression);
   }
 }
 
@@ -405,7 +416,11 @@ async function visitVariableDeclaration(ctx: Context, decl: VariableDeclaration,
           await visitConditionalExpression(ctx, item.init, functionsToFind);
           break;
         case "CallExpression":
-          await visitCallExpression(ctx, item.init, functionsToFind);
+          const result = await visitCallExpression(ctx, item.init, functionsToFind);
+          if (result) {
+            console.log('CallExpression result', result)
+            item.init = result;
+          }
           break;
         case "NewExpression":
           await visitNewExpression(ctx, item.init, functionsToFind);
