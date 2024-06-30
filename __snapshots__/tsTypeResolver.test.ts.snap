@@ -21,6 +21,93 @@ exports[`tsTypeResolver should resolve generic types 1`] = `
 }
 `;
 
+exports[`tsTypeResolver should resolve generic types 2`] = `
+{
+  "properties": {
+    "testPropT": {
+      "properties": {
+        "testPropT": {
+          "properties": {
+            "testProp": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+        "testPropT2": {
+          "properties": {
+            "testProp": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+      },
+      "type": "object",
+    },
+    "testPropT2": {
+      "properties": {
+        "testPropT": {
+          "properties": {
+            "testProp": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+        "testPropT2": {
+          "properties": {
+            "testProp": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+      },
+      "type": "object",
+    },
+  },
+  "type": "object",
+}
+`;
+
+exports[`tsTypeResolver should resolve generic types 3`] = `
+{
+  "properties": {
+    "testPropT": {
+      "properties": {
+        "testPropT": {
+          "properties": {
+            "testProp1": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+        "testPropT2": {
+          "properties": {
+            "testProp2": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+      },
+      "type": "object",
+    },
+    "testPropT2": {
+      "properties": {
+        "testProp2": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+  "type": "object",
+}
+`;
+
 exports[`tsTypeResolver should resolve self contained types 1`] = `
 {
   "properties": {
