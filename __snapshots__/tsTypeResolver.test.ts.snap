@@ -1,6 +1,25 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`tsTypeResolver should resolve generic types 1`] = `undefined`;
+exports[`tsTypeResolver should resolve generic types 1`] = `
+{
+  "properties": {
+    "testPropT": {
+      "properties": {
+        "testPropT": {
+          "properties": {
+            "testProp": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+      },
+      "type": "object",
+    },
+  },
+  "type": "object",
+}
+`;
 
 exports[`tsTypeResolver should resolve self contained types 1`] = `
 {

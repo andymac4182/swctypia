@@ -1,7 +1,7 @@
 import {
   Expression,
   TsArrayType,
-  TsInterfaceBody,
+  TsInterfaceBody, TsInterfaceDeclaration,
   TsIntersectionType,
   TsKeywordType,
   TsLiteralType,
@@ -16,14 +16,14 @@ import {TsTypeElement} from "@swc/types";
 import {ASTNode} from "./validation-ast";
 import {Context} from "./index";
 
-async function resolveTsPropertySignature(ctx: Context, member: TsPropertySignature) {
+async function resolveTsPropertySignature(ctx: Context, member: TsPropertySignature, typeParams: KeyToASTNode) {
   if(member.computed){
     return undefined;
   }
   return {
     key: await resolveExpression(member.key),
     optional: member.optional,
-    typeInfo: await resolveTsType(ctx, member.typeAnnotation.typeAnnotation),
+    typeInfo: await resolveTsType(ctx, member.typeAnnotation.typeAnnotation, typeParams),
   };
 }
 
@@ -121,14 +121,14 @@ async function resolveExpression(expr: Expression){
   }
 }
 
-async function resolveTsTypeElement(ctx: Context, member: TsTypeElement) {
+async function resolveTsTypeElement(ctx: Context, member: TsTypeElement, typeParams: KeyToASTNode) {
   switch (member.type) {
     case "TsCallSignatureDeclaration":
       break;
     case "TsConstructSignatureDeclaration":
       break;
     case "TsPropertySignature":
-      return await resolveTsPropertySignature(ctx, member);
+      return await resolveTsPropertySignature(ctx, member, typeParams);
     case "TsGetterSignature":
       break;
     case "TsSetterSignature":
@@ -143,7 +143,7 @@ async function resolveTsTypeElement(ctx: Context, member: TsTypeElement) {
 async function resolveTsTypeLiteral(ctx: Context, tsType: TsTypeLiteral): Promise<ASTNode | undefined> {
   const properties: { [key: string]: ASTNode } = {};
   for (const member of tsType.members) {
-    const result = await resolveTsTypeElement(ctx, member);
+    const result = await resolveTsTypeElement(ctx, member, {});
     if (result) {
       properties[result.key] = result.typeInfo
     }
@@ -255,10 +255,23 @@ async function resolveTsLiteralType(tsType: TsLiteralType): Promise<ASTNode | un
   }
 }
 
-async function resolveTsInterfaceBody(ctx: Context, body: TsInterfaceBody): Promise<ASTNode | undefined> {
+interface KeyToASTNode { [key: string]: ASTNode }
+
+async function resolveTsInterfaceDeclaration(ctx: Context, statement: TsInterfaceDeclaration, resolvedTypeParams?: ASTNode[]) {
+  const typeParams: KeyToASTNode = {};
+  if(statement.typeParams && resolvedTypeParams){
+    for (let i = 0; i < statement.typeParams.parameters.length; i++) {
+      typeParams[statement.typeParams.parameters[i].name.value] = resolvedTypeParams[i];
+    }
+
+  }
+  return await resolveTsInterfaceBody(ctx, statement.body, typeParams);
+}
+
+async function resolveTsInterfaceBody(ctx: Context, body: TsInterfaceBody, typeParams: KeyToASTNode): Promise<ASTNode | undefined> {
   const properties: { [key: string]: ASTNode } = {};
   for (const member of body.body) {
-    const result = await resolveTsTypeElement(ctx, member);
+    const result = await resolveTsTypeElement(ctx, member, typeParams);
     if (result) {
       properties[result.key] = result.typeInfo
     }
@@ -278,7 +291,7 @@ async function resolveTypeFromFile(ctx: Context, source: string, typeName: strin
         return await resolveTsType(ctx, importedStatement.declaration.typeAnnotation);
       }
       if (importedStatement.type === 'ExportDeclaration' && importedStatement.declaration.type === 'TsInterfaceDeclaration' && importedStatement.declaration.id.value === typeName) {
-        return await resolveTsInterfaceBody(ctx, importedStatement.declaration.body);
+        return await resolveTsInterfaceDeclaration(ctx, importedStatement.declaration);
       }
       if (importedStatement.type === "ExportNamedDeclaration"){
         return await resolveTypeFromFile(ctx, importedStatement.source.value, typeName);
@@ -287,11 +300,22 @@ async function resolveTypeFromFile(ctx: Context, source: string, typeName: strin
   }
 }
 
+
+
 async function resolveTsTypeReference(ctx: Context, tsType: TsTypeReference): Promise<ASTNode | undefined> {
   switch (tsType.typeName.type) {
     case "Identifier":
       const typeName = tsType.typeName.value;
       const typeParams = tsType.typeParams;
+      const resolvedTypeParams: ASTNode[] | undefined = [];
+      if (typeParams) {
+        for (const typeParam of typeParams.params) {
+          const result = await resolveTsType(ctx, typeParam);
+          if(result) {
+            resolvedTypeParams.push(result);
+          }
+        }
+      }
       for (const statement of ctx.module.body) {
         if (statement.type === 'ImportDeclaration' && statement.specifiers.some(specifier => specifier.local.value === typeName)) {
           return await resolveTypeFromFile(ctx, statement.source.value, typeName);
@@ -299,14 +323,14 @@ async function resolveTsTypeReference(ctx: Context, tsType: TsTypeReference): Pr
         if (statement.type === 'TsTypeAliasDeclaration' && statement.id.value === typeName) {
           return await resolveTsType(ctx, statement.typeAnnotation);
         }
-        if (statement.type === 'TsInterfaceDeclaration' && statement.id.value === typeName) {
-          return await resolveTsInterfaceBody(ctx, statement.body);
-        }
         if (statement.type === 'ExportDeclaration' && statement.declaration.type === 'TsTypeAliasDeclaration' && statement.declaration.id.value === typeName) {
           return await resolveTsType(ctx, statement.declaration.typeAnnotation);
         }
+        if (statement.type === 'TsInterfaceDeclaration' && statement.id.value === typeName) {
+          return await resolveTsInterfaceDeclaration(ctx, statement, resolvedTypeParams);
+        }
         if (statement.type === 'ExportDeclaration' && statement.declaration.type === 'TsInterfaceDeclaration' && statement.declaration.id.value === typeName) {
-          return await resolveTsInterfaceBody(ctx, statement.declaration.body);
+          return await resolveTsInterfaceDeclaration(ctx, statement.declaration, resolvedTypeParams);
         }
       }
       break;
@@ -315,7 +339,7 @@ async function resolveTsTypeReference(ctx: Context, tsType: TsTypeReference): Pr
   }
 }
 
-export async function resolveTsType(ctx: Context, tsType: TsType): Promise<ASTNode | undefined> {
+export async function resolveTsType(ctx: Context, tsType: TsType, typeParams?: KeyToASTNode): Promise<ASTNode | undefined> {
   switch (tsType.type) {
     case "TsKeywordType":
       return await resolveTsKeywordType(ctx, tsType);
@@ -326,6 +350,9 @@ export async function resolveTsType(ctx: Context, tsType: TsType): Promise<ASTNo
     case "TsConstructorType":
       break;
     case "TsTypeReference":
+      if(tsType.typeName.type === 'Identifier' && typeParams && typeParams[tsType.typeName.value]){
+        return typeParams[tsType.typeName.value];
+      }
       return await resolveTsTypeReference(ctx, tsType);
     case "TsTypeQuery":
       break;

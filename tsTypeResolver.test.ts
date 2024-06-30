@@ -67,7 +67,7 @@ describe('tsTypeResolver', () => {
   });
 
   const tsGenericTestCases = [
-    {'entrypoint.ts': 'interface ReferencedType<T> { testProp: T }; type testType = ReferencedType<{testProp: string}>;'},
+    {'entrypoint.ts': 'interface ReferencedType<T> { testPropT: T }; type testType = ReferencedType<ReferencedType<{testProp: string}>>;'},
   ];
   it.each(tsGenericTestCases)('should resolve generic types', async (testCase) => {
     const typeAST = await parseStringExtractType(testCase['entrypoint.ts'], 'testType');
